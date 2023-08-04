@@ -1,21 +1,60 @@
-import net.civmc.civgradle.CivGradleExtension
+import net.civmc.civgradle.common.util.civRepo
 
 plugins {
-	id("net.civmc.civgradle") version "2.+" apply false
+	`java-library`
+	`maven-publish`
+	id("net.civmc.civgradle.plugin") version "1.0.0-SNAPSHOT"
+}
+
+// Temporary hack:
+// Remove the root build directory
+gradle.buildFinished {
+	project.buildDir.deleteRecursively()
+}
+
+allprojects {
+	group = "net.civmc.banstick"
+	version = "2.0.0-SNAPSHOT"
+	description = "BanStick"
+}
+
+repositories {
+	mavenCentral()
+
 }
 
 subprojects {
-	apply(plugin = "net.civmc.civgradle")
+	apply(plugin = "net.civmc.civgradle.plugin")
 	apply(plugin = "java-library")
 	apply(plugin = "maven-publish")
 
-	configure<CivGradleExtension> {
-		pluginName = project.property("pluginName") as String
+	java {
+		toolchain {
+			languageVersion.set(JavaLanguageVersion.of(17))
+		}
 	}
 
 	repositories {
 		mavenCentral()
-		maven("https://repo.civmc.net/repository/maven-public")
-		maven("https://jitpack.io")
+		civRepo("CivMC/CivModCore")
+		civRepo("CivMC/NameLayer")
+	}
+
+	publishing {
+		repositories {
+			maven {
+				name = "GitHubPackages"
+				url = uri("https://maven.pkg.github.com/CivMC/BanStick")
+				credentials {
+					username = System.getenv("GITHUB_ACTOR")
+					password = System.getenv("GITHUB_TOKEN")
+				}
+			}
+		}
+		publications {
+			register<MavenPublication>("gpr") {
+				from(components["java"])
+			}
+		}
 	}
 }
